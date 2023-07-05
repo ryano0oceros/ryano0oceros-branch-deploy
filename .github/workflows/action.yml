@@ -32,6 +32,15 @@ jobs:
         id: branch-deploy
         uses: github/branch-deploy@v6.0.1
 
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          role-duration-seconds: 1200
+          role-session-name: MySessionName
+
         # If the branch-deploy Action was triggered, checkout our branch
       - name: Checkout
         if: steps.branch-deploy.outputs.continue == 'true'
@@ -40,18 +49,18 @@ jobs:
           ref: ${{ steps.branch-deploy.outputs.ref }}
 
         # Setup Terraform on our Actions runner
-      - uses: hashicorp/setup-terraform@ed3a0531877aca392eb870f440d9ae7aba83a6bd # pin@v1
+      - uses: hashicorp/setup-terraform@633666f66e0061ca3b725c73b2ec20cd13a8fdd1 # pin@v2.0.3
         if: steps.branch-deploy.outputs.continue == 'true'
         with:
           terraform_version: 1.1.7 # use the version of Terraform your project uses here
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          # aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          # aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
 
         # Run Terraform init in our working directory
       - name: Terraform init
         if: steps.branch-deploy.outputs.continue == 'true'
-        run: terraform init
+        run: terraform init -backend-config="profile=default"
 
         # If '.deploy noop' was used, run a Terraform plan
       - name: Terraform plan
